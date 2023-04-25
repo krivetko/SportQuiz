@@ -41,30 +41,30 @@ cached_results = {}
 results_to_upload = {}
 right_answers = []
 
-leaders = ['1025225399',
-            '1026761214',
-            '315132953',
-            '367156590',
-            '837275597',
-            '1198377474',
-            '1244211630',
-            '1564181419',
-            '1273905788',
-            '1224436440',
-            '1355137342',
-            '525159838',
+leaders = [ '212504240',
+            '521812517',
+            '208021168',
             '1208194227',
-            '1512157470',
-            '586114448',
-            '1144159307',
-            '1247568549',
-            '295409271',
-            '457487615',
-            '494892023',
-            '1604218107',
-            '212504240']
+            '529972873',
+            '1029658531',
+            '367156590',
+            '1198377474',
+            '1224436440',
+            '942251657',
+            '1025225399',
+            '172634974',
+            '1775817232',
+            '1140667290']
 
 KRIVETKO = 212504240
+
+admins = ['212504240',
+        '208021168']
+
+bonus_tasks = ['202209',
+            '202216',
+            '202223']
+
 gc = pygsheets.authorize(service_file='service_account_credentials.json')
 gSheet = gc.open("SGUSportsQuiz")
 partSheet = gSheet.worksheet_by_title('Participants')
@@ -92,7 +92,7 @@ def cache_daily_tasks(datestr=None):
                 if len(task['id'].split('_')) == 1 and (task['sent'] == '1' and task['ended'] == '0'):
                 # if len(task['id'].split('_')) == 1:
                     daily_tasks[task['id']] = taskDict
-                elif task['id'].split('_')[0] in daily_tasks:
+                elif task['id'].split('_')[0] in daily_tasks and len(task['id'].split('_')) != 1:
                     if 'seq' not in daily_tasks[task['id'].split('_')[0]]:
                         daily_tasks[task['id'].split('_')[0]]['seq'] = []
                     daily_tasks[task['id'].split('_')[0]]['seq'].append(taskDict)
@@ -130,7 +130,7 @@ def cache_results():
         foundCells = resultsSheet.find(pattern=key, matchEntireCell=True)
         if len(foundCells) > 0:
             targetColumns[key] = foundCells[0].col
-    results = resultsSheet.get_all_values(include_tailing_empty=False, include_tailing_empty_rows=False)
+    results = resultsSheet.get_all_values(include_tailing_empty=True, include_tailing_empty_rows=False)
     for row in results[1:]:
         if row[0] != '':
             cached_results[row[0]] = {key : row[(targetColumns[key] - 1)] for key in targetColumns.keys()}
@@ -173,29 +173,29 @@ def start(update: Update, context: CallbackContext) -> None:
         if isAuthorized(update.effective_user.id):
             keyboard = [
                 [
-                    InlineKeyboardButton("Правила квеста", callback_data='rules'),
-                    InlineKeyboardButton("Таблица-рейтинг", callback_data='rankings')
+                    InlineKeyboardButton("РџСЂР°РІРёР»Р° РєРІРµСЃС‚Р°", callback_data='rules'),
+                    InlineKeyboardButton("РўР°Р±Р»РёС†Р°-СЂРµР№С‚РёРЅРі", callback_data='rankings')
                 ],
                 [
-                    InlineKeyboardButton("Ответы на задания прошлой недели", callback_data='faq')
+                    InlineKeyboardButton("РћС‚РІРµС‚С‹ РЅР° Р·Р°РґР°РЅРёСЏ РїСЂРѕС€Р»РѕР№ РЅРµРґРµР»Рё", callback_data='faq')
                 ],
                 [
-                    InlineKeyboardButton("Задания на сегодня", callback_data='current_task'),
-                    InlineKeyboardButton("Чат для участников", callback_data='chat')
+                    InlineKeyboardButton("Р—Р°РґР°РЅРёСЏ РЅР° СЃРµРіРѕРґРЅСЏ", callback_data='current_task'),
+                    InlineKeyboardButton("Р§Р°С‚ РґР»СЏ СѓС‡Р°СЃС‚РЅРёРєРѕРІ", callback_data='chat')
                 ],
                 [
-                    InlineKeyboardButton("Наш канал на Youtube", callback_data='youtube')
+                    InlineKeyboardButton("РќР°С€ СЃРїРѕСЂС‚РёРІРЅС‹Р№ РєР°РЅР°Р» РІ Telegram", callback_data='youtube')
                 ]
 
             ]
         else:
             keyboard = [
                 [
-                    InlineKeyboardButton("Авторизоваться", callback_data='auth')
+                    InlineKeyboardButton("РђРІС‚РѕСЂРёР·РѕРІР°С‚СЊСЃСЏ", callback_data='auth')
                 ]
             ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        update.message.reply_text('Доступные команды:', reply_markup=reply_markup)
+        update.message.reply_text('Р”РѕСЃС‚СѓРїРЅС‹Рµ РєРѕРјР°РЅРґС‹:', reply_markup=reply_markup)
         return BUTTONS_SHOW
 
 def admin_send_message(update: Update, context: CallbackContext) -> None:
@@ -211,13 +211,13 @@ def admin_send_message(update: Update, context: CallbackContext) -> None:
                 except:
                     logging.info(line.get('Telegram Id'))
     else:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Неизвестная команда')
+        context.bot.send_message(chat_id=update.effective_user.id, text='РќРµРёР·РІРµСЃС‚РЅР°СЏ РєРѕРјР°РЅРґР°')
 
 def admin_send_message_to_user(update: Update, context: CallbackContext) -> None:
     foundCells = partSheet.find(pattern=str(update.effective_user.id), cols=(1, 1))
     if len(foundCells) > 0 and partSheet.cell((foundCells[0].row, 5)).value != "":
         context.bot.send_message(chat_id=context.args[0], text=' '.join(context.args[1:]))
-        logging.info(context.args[0] + ': Отправлено сообщение - ' + ' '.join(context.args[1:]))
+        logging.info(context.args[0] + ': РћС‚РїСЂР°РІР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёРµ - ' + ' '.join(context.args[1:]))
 
 def send_task_by_id(update: Updater, context: CallbackContext) -> None:
     send_task(context, get_task(context.args[1]), context.args[0], hasJoker(update.effective_user.id))
@@ -231,22 +231,22 @@ def force_sync(update: Updater, context: CallbackContext) -> None:
             cache_daily_tasks(datestr)
             cache_participants()
             cache_results()
-            context.bot.send_message(chat_id=update.effective_user.id, text='Синхронизация выполнена! Записей в справочниках: daily_tasks - {}, cached_participants - {}, cached_results - {}'.format(len(daily_tasks.keys()), len(cached_participants.keys()), len(cached_results.keys())))
+            context.bot.send_message(chat_id=update.effective_user.id, text='РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РІС‹РїРѕР»РЅРµРЅР°! Р—Р°РїРёСЃРµР№ РІ СЃРїСЂР°РІРѕС‡РЅРёРєР°С…: daily_tasks - {}, cached_participants - {}, cached_results - {}'.format(len(daily_tasks.keys()), len(cached_participants.keys()), len(cached_results.keys())))
         else:
-            context.bot.send_message(chat_id=update.effective_user.id, text='В текущих дневных заданиях не задана дата! Синхронизация не выполнена')
+            context.bot.send_message(chat_id=update.effective_user.id, text='Р’ С‚РµРєСѓС‰РёС… РґРЅРµРІРЅС‹С… Р·Р°РґР°РЅРёСЏС… РЅРµ Р·Р°РґР°РЅР° РґР°С‚Р°! РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РЅРµ РІС‹РїРѕР»РЅРµРЅР°')
     else:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Список текущих дневных заданий пуст! Синхронизация не выполнена')
+        context.bot.send_message(chat_id=update.effective_user.id, text='РЎРїРёСЃРѕРє С‚РµРєСѓС‰РёС… РґРЅРµРІРЅС‹С… Р·Р°РґР°РЅРёР№ РїСѓСЃС‚! РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РЅРµ РІС‹РїРѕР»РЅРµРЅР°')
 
 def echo(update: Updater, context: CallbackContext) -> None:
     username = get_username(user_id=update.effective_user.id)
     if username is not None:
-        context.bot.send_message(chat_id=update.effective_user.id, text=str(username) + '! Для взаимодействия с ботом воспользуйтесь командой /start или кнопками, прикрепленными к сообщениям с заданиями!')
+        context.bot.send_message(chat_id=update.effective_user.id, text=str(username) + '! Р”Р»СЏ РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЏ СЃ Р±РѕС‚РѕРј РІРѕСЃРїРѕР»СЊР·СѓР№С‚РµСЃСЊ РєРѕРјР°РЅРґРѕР№ /start РёР»Рё РєРЅРѕРїРєР°РјРё, РїСЂРёРєСЂРµРїР»РµРЅРЅС‹РјРё Рє СЃРѕРѕР±С‰РµРЅРёСЏРј СЃ Р·Р°РґР°РЅРёСЏРјРё!')
 
 # --------------------- Conversation Handlers ---------------------
 def auth_start(update: Update, context: CallbackContext) -> int:
 
     update.callback_query.message.delete()
-    context.bot.send_message(chat_id=update.effective_user.id, text='Для авторизации отправьте ФИО или Никнейм, указанные при регистрации:')
+    context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р»СЏ Р°РІС‚РѕСЂРёР·Р°С†РёРё РѕС‚РїСЂР°РІСЊС‚Рµ Р¤РРћ РёР»Рё РќРёРєРЅРµР№Рј, СѓРєР°Р·Р°РЅРЅС‹Рµ РїСЂРё СЂРµРіРёСЃС‚СЂР°С†РёРё:')
     return AUTH
 
 def auth_end(update: Update, context: CallbackContext) -> int:
@@ -255,17 +255,17 @@ def auth_end(update: Update, context: CallbackContext) -> int:
     foundCells = partSheet.find(pattern=FIO, cols=(2,2))
     userFound = False
     if len(foundCells) > 0:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Спасибо и удачи в состязании, {}!'.format(FIO))
+        context.bot.send_message(chat_id=update.effective_user.id, text='РЎРїР°СЃРёР±Рѕ Рё СѓРґР°С‡Рё РІ СЃРѕСЃС‚СЏР·Р°РЅРёРё, {}!'.format(FIO))
         partSheet.cell((foundCells[0].row,1)).value = update.effective_user.id
         userFound = True
     else:
         foundCells = partSheet.find(pattern=FIO, cols=(3,3))
         if len(foundCells) > 0:
-            context.bot.send_message(chat_id=update.effective_user.id, text='Спасибо и удачи в состязании, {}!'.format(FIO))
+            context.bot.send_message(chat_id=update.effective_user.id, text='РЎРїР°СЃРёР±Рѕ Рё СѓРґР°С‡Рё РІ СЃРѕСЃС‚СЏР·Р°РЅРёРё, {}!'.format(FIO))
             partSheet.cell((foundCells[0].row,1)).value = update.effective_user.id
             userFound = True
         else:
-            context.bot.send_message(chat_id=update.effective_user.id, text='К сожалению, не смог найти Вас в списке участников. Просьба обратиться к организатору!')
+            context.bot.send_message(chat_id=update.effective_user.id, text='Рљ СЃРѕР¶Р°Р»РµРЅРёСЋ, РЅРµ СЃРјРѕРі РЅР°Р№С‚Рё Р’Р°СЃ РІ СЃРїРёСЃРєРµ СѓС‡Р°СЃС‚РЅРёРєРѕРІ. РџСЂРѕСЃСЊР±Р° РѕР±СЂР°С‚РёС‚СЊСЃСЏ Рє РѕСЂРіР°РЅРёР·Р°С‚РѕСЂСѓ!')
 
     text_to_krivetko = str(update.effective_user.id) + " : " + update.message.text + " : User found - " + str(userFound)
     logger.info(text_to_krivetko)
@@ -275,9 +275,8 @@ def auth_end(update: Update, context: CallbackContext) -> int:
 def get_text_answer(update: Updater, context: CallbackContext) -> int:
     task_id = context.user_data['task_id'].split('_')[0]
     task = get_task(task_id)
-
     if task['answertype'] == 'media':
-        context.bot.send_message(chat_id=update.effective_user.id, text='Данный вопрос не предполагает текстового ответа, возможно вы ошиблись кнопкой для ответа на задание. Попробуйте ответить еще раз, или задайте вопрос в чате участников.')
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р°РЅРЅС‹Р№ РІРѕРїСЂРѕСЃ РЅРµ РїСЂРµРґРїРѕР»Р°РіР°РµС‚ С‚РµРєСЃС‚РѕРІРѕРіРѕ РѕС‚РІРµС‚Р°, РІРѕР·РјРѕР¶РЅРѕ РІС‹ РѕС€РёР±Р»РёСЃСЊ РєРЅРѕРїРєРѕР№ РґР»СЏ РѕС‚РІРµС‚Р° РЅР° Р·Р°РґР°РЅРёРµ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РІРµС‚РёС‚СЊ РµС‰Рµ СЂР°Р·, РёР»Рё Р·Р°РґР°Р№С‚Рµ РІРѕРїСЂРѕСЃ РІ С‡Р°С‚Рµ СѓС‡Р°СЃС‚РЅРёРєРѕРІ.')
         context.user_data.pop('task_id', None)
         context.user_data.pop('message_id', None)
         context.user_data.pop(task_id + 'seqAnswers', None)
@@ -300,10 +299,10 @@ def get_text_answer(update: Updater, context: CallbackContext) -> int:
 
     answerIsCorrect = validate_answer(task_id, update.message.text.lower(), context)
     if answerIsCorrect:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Ваш ответ принят.')
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р’Р°С€ РѕС‚РІРµС‚ РїСЂРёРЅСЏС‚.')
         mark_answer(str(update.effective_user.id), task_id, True)
 
-        infotext = str(update.effective_user.id) + ': корректный текстовый ответ пользователя - ' + task_id + ': '
+        infotext = str(update.effective_user.id) + ': РєРѕСЂСЂРµРєС‚РЅС‹Р№ С‚РµРєСЃС‚РѕРІС‹Р№ РѕС‚РІРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ - ' + task_id + ': '
         if task_id + 'seqAnswers' in context.user_data.keys():
             infotext = infotext + ' '.join(context.user_data[task_id + 'seqAnswers'])
         else:
@@ -317,14 +316,14 @@ def get_text_answer(update: Updater, context: CallbackContext) -> int:
         return ConversationHandler.END
     else:
         mark_answer(str(update.effective_user.id), task_id, correctAnswer=False, approvalPending=True)
-        context.bot.send_message(chat_id=update.effective_user.id, text='Ваш ответ принят.')
-        infotext = str(update.effective_user.id) + ': НЕкорректный текстовый ответ пользователя (отправлен на валидацию) - ' + task_id + ': '
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р’Р°С€ РѕС‚РІРµС‚ РїСЂРёРЅСЏС‚.')
+        infotext = str(update.effective_user.id) + ': РќР•РєРѕСЂСЂРµРєС‚РЅС‹Р№ С‚РµРєСЃС‚РѕРІС‹Р№ РѕС‚РІРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (РѕС‚РїСЂР°РІР»РµРЅ РЅР° РІР°Р»РёРґР°С†РёСЋ) - ' + task_id + ': '
         if task_id + 'seqAnswers' in context.user_data.keys():
             infotext = infotext + ' '.join(context.user_data[task_id + 'seqAnswers'])
-            validation_text = 'Пользователь - <b>' + get_username(update.effective_user.id) + '</b> ({})\nВопрос - <b>№'.format(update.effective_user.id) + task_id.replace('2021', '') + '</b>\n' + 'Не обработанный автоматически ответ: \n\n' + '\n'.join(context.user_data[task_id + 'seqAnswers'])
+            validation_text = 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ - <b>' + get_username(update.effective_user.id) + '</b> ({})\nР’РѕРїСЂРѕСЃ - <b>в„–'.format(update.effective_user.id) + task_id.replace('2021', '') + '</b>\n' + 'РќРµ РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Р№ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РѕС‚РІРµС‚: \n\n' + '\n'.join(context.user_data[task_id + 'seqAnswers'])
         else:
             infotext = infotext + update.message.text.lower()
-            validation_text = 'Пользователь - <b>' + get_username(update.effective_user.id) + '</b> ({})\nВопрос - <b>№'.format(update.effective_user.id) + task_id.replace('2021', '') + '</b>\n' + 'Не обработанный автоматически ответ: \n\n' + update.message.text
+            validation_text = 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ - <b>' + get_username(update.effective_user.id) + '</b> ({})\nР’РѕРїСЂРѕСЃ - <b>в„–'.format(update.effective_user.id) + task_id.replace('2021', '') + '</b>\n' + 'РќРµ РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Р№ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РѕС‚РІРµС‚: \n\n' + update.message.text
         validation_kb = generate_validation_kb(update.effective_user.id, context.user_data['task_id'])
         logging.info(infotext)
         context.bot.send_message(chat_id=VALIDATION_GROUP, text=validation_text, reply_markup=validation_kb, parse_mode='HTML')
@@ -336,15 +335,15 @@ def get_text_answer(update: Updater, context: CallbackContext) -> int:
 def get_media_answer(update: Updater, context: CallbackContext) -> int:
     task = get_task(context.user_data['task_id'].split('_')[0])
     if task['answertype'] == 'text':
-        context.bot.send_message(chat_id=update.effective_user.id, text='Данный вопрос требует текстового ответа, возможно вы ошиблись кнопкой для ответа на задание. Попробуйте ответить еще раз, или задайте вопрос в чате участников.')
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р°РЅРЅС‹Р№ РІРѕРїСЂРѕСЃ С‚СЂРµР±СѓРµС‚ С‚РµРєСЃС‚РѕРІРѕРіРѕ РѕС‚РІРµС‚Р°, РІРѕР·РјРѕР¶РЅРѕ РІС‹ РѕС€РёР±Р»РёСЃСЊ РєРЅРѕРїРєРѕР№ РґР»СЏ РѕС‚РІРµС‚Р° РЅР° Р·Р°РґР°РЅРёРµ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РІРµС‚РёС‚СЊ РµС‰Рµ СЂР°Р·, РёР»Рё Р·Р°РґР°Р№С‚Рµ РІРѕРїСЂРѕСЃ РІ С‡Р°С‚Рµ СѓС‡Р°СЃС‚РЅРёРєРѕРІ.')
         context.user_data.pop('task_id', None)
         context.user_data.pop('message_id', None)
         return ConversationHandler.END
 
-    context.bot.send_message(chat_id=update.effective_user.id, text='Ваш ответ принят.')
-    validation_text = 'Ответ на вопрос - <b>№' + context.user_data['task_id'].split('_')[0].replace('2021', '') + '</b>\n' + 'Пользователь - <b>' + get_username(update.effective_user.id) + '</b> ({})'.format(update.effective_user.id)
+    context.bot.send_message(chat_id=update.effective_user.id, text='Р’Р°С€ РѕС‚РІРµС‚ РїСЂРёРЅСЏС‚.')
+    validation_text = 'РћС‚РІРµС‚ РЅР° РІРѕРїСЂРѕСЃ - <b>в„–' + context.user_data['task_id'].split('_')[0].replace('2021', '') + '</b>\n' + 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ - <b>' + get_username(update.effective_user.id) + '</b> ({})'.format(update.effective_user.id)
     validation_kb = generate_validation_kb(update.effective_user.id, context.user_data['task_id'])
-    infotext = str(update.effective_user.id) + ': медиа ответ пользователя на задание ' + context.user_data['task_id'] + ' отправлен на подтверждение'
+    infotext = str(update.effective_user.id) + ': РјРµРґРёР° РѕС‚РІРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅР° Р·Р°РґР°РЅРёРµ ' + context.user_data['task_id'] + ' РѕС‚РїСЂР°РІР»РµРЅ РЅР° РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ'
     context.bot.copy_message(chat_id=VALIDATION_GROUP, from_chat_id=update.message.chat.id, message_id=update.message.message_id, caption=validation_text, reply_markup=validation_kb, parse_mode='HTML')
     context.user_data.pop('task_id', None)
     context.user_data.pop('message_id', None)
@@ -355,16 +354,16 @@ def get_answer(update: Updater, context: CallbackContext) -> int:
     callbackData = update.callback_query.data
     task = get_task(callbackData[callbackData.index('_') + 1:].split('_')[0])
     if task is None:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Похоже, время приема ответа этот вопрос истекло. Удачи в следующих этапах состязания!')
+        context.bot.send_message(chat_id=update.effective_user.id, text='РџРѕС…РѕР¶Рµ, РІСЂРµРјСЏ РїСЂРёРµРјР° РѕС‚РІРµС‚Р° СЌС‚РѕС‚ РІРѕРїСЂРѕСЃ РёСЃС‚РµРєР»Рѕ. РЈРґР°С‡Рё РІ СЃР»РµРґСѓСЋС‰РёС… СЌС‚Р°РїР°С… СЃРѕСЃС‚СЏР·Р°РЅРёСЏ!')
         return ConversationHandler.END
     context.user_data['task_id'] = callbackData[callbackData.index('_') + 1:]
     context.user_data['message_id'] = update.callback_query.message.message_id
     if 'sentMsgs' in context.user_data:
         context.user_data['sentMsgs'].pop(context.user_data['task_id'], None)
-        if 'seqAnswers' not in context.user_data.keys():
-            context.bot.send_message(chat_id=update.effective_user.id, text='Отправьте ваш ответ или введите команду /cancel, если хотите еще подумать:')
-            update.callback_query.message.edit_reply_markup()
-    if 'seq' in task.keys():
+        if task['id'] + 'seqAnswers' not in context.user_data.keys():
+            context.bot.send_message(chat_id=update.effective_user.id, text='РћС‚РїСЂР°РІСЊС‚Рµ РІР°С€ РѕС‚РІРµС‚ РёР»Рё РІРІРµРґРёС‚Рµ РєРѕРјР°РЅРґСѓ /cancel, РµСЃР»Рё С…РѕС‚РёС‚Рµ РµС‰Рµ РїРѕРґСѓРјР°С‚СЊ:')
+        update.callback_query.message.edit_reply_markup()
+    if 'seq' in task.keys() and task['id'] + 'seqAnswers' not in context.user_data.keys():
         context.user_data[task['id'] + 'seqAnswers'] = []
     return WAIT_ANSWER
 
@@ -379,25 +378,25 @@ def cancel(update: Updater, context: CallbackContext) -> int:
     task = get_task(task_id.split('_')[0])
     if 'seq' in task.keys():
         context.user_data[task_id.split('_')[0] + 'seq'] = task.pop('seq', None)
-    context.bot.send_message(chat_id=update.effective_user.id, text='Попытка ответа отменена. Для повторной попытки еще раз запросите задания на сегодня из главного меню.')
+    context.bot.send_message(chat_id=update.effective_user.id, text='РџРѕРїС‹С‚РєР° РѕС‚РІРµС‚Р° РѕС‚РјРµРЅРµРЅР°. Р”Р»СЏ РїРѕРІС‚РѕСЂРЅРѕР№ РїРѕРїС‹С‚РєРё РµС‰Рµ СЂР°Р· Р·Р°РїСЂРѕСЃРёС‚Рµ Р·Р°РґР°РЅРёСЏ РЅР° СЃРµРіРѕРґРЅСЏ РёР· РіР»Р°РІРЅРѕРіРѕ РјРµРЅСЋ.')
     return ConversationHandler.END
 
 # --------------------- Keyboard Generators ---------------------
 def generate_answer_kb(task_id, joker=False):
     keyboard = [
         [
-            InlineKeyboardButton("Ответить", callback_data='task_' + task_id)
+            InlineKeyboardButton("РћС‚РІРµС‚РёС‚СЊ", callback_data='task_' + task_id)
         ]
     ]
-    if joker:
-        keyboard[0].append(InlineKeyboardButton("Использовать Джокер!", callback_data='jkr_' + task_id))
+    if joker and (task_id not in bonus_tasks):
+        keyboard[0].append(InlineKeyboardButton("РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ Р”Р¶РѕРєРµСЂ!", callback_data='jkr_' + task_id))
     return InlineKeyboardMarkup(keyboard)
 
 def generate_validation_kb(user_id, task_id):
     keyboard = [
         [
-            InlineKeyboardButton("Принять ответ", callback_data='accept_' + str(user_id) + '_' + task_id),
-            InlineKeyboardButton("Отклонить ответ", callback_data='decline_' + str(user_id) + '_' + task_id)
+            InlineKeyboardButton("РџСЂРёРЅСЏС‚СЊ РѕС‚РІРµС‚", callback_data='accept_' + str(user_id) + '_' + task_id),
+            InlineKeyboardButton("РћС‚РєР»РѕРЅРёС‚СЊ РѕС‚РІРµС‚", callback_data='decline_' + str(user_id) + '_' + task_id)
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -417,10 +416,10 @@ def accept(update: Updater, context: CallbackContext):
         firstlastname = [userinfo.pop('first_name', None), userinfo.pop('last_name', None)]
         usertext = ' '.join([elem for elem in firstlastname if elem is not None])
     if update.callback_query.message.text is not None:
-        newText = update.callback_query.message.text + '\n<b>Ответ принят пользователем ' + usertext + '</b>'
+        newText = update.callback_query.message.text + '\n<b>РћС‚РІРµС‚ РїСЂРёРЅСЏС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј ' + usertext + '</b>'
         context.bot.edit_message_text(message_id=update.callback_query.message.message_id, chat_id=update.callback_query.message.chat.id, text=newText, parse_mode='HTML', reply_markup=None)
     else:
-        newText = update.callback_query.message.caption + '\n<b>Ответ принят пользователем ' + usertext + '</b>'
+        newText = update.callback_query.message.caption + '\n<b>РћС‚РІРµС‚ РїСЂРёРЅСЏС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј ' + usertext + '</b>'
         context.bot.edit_message_caption(message_id=update.callback_query.message.message_id, chat_id=update.callback_query.message.chat.id, caption=newText, parse_mode='HTML', reply_markup=None)
     update.callback_query.answer()
 
@@ -439,10 +438,10 @@ def decline(update: Updater, context: CallbackContext):
         firstlastname = [userinfo.pop('first_name', None), userinfo.pop('last_name', None)]
         usertext = ' '.join([elem for elem in firstlastname if elem is not None])
     if update.callback_query.message.text is not None:
-        newText = update.callback_query.message.text + '\n<b>Ответ отклонен пользователем ' + usertext + '</b>'
+        newText = update.callback_query.message.text + '\n<b>РћС‚РІРµС‚ РѕС‚РєР»РѕРЅРµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј ' + usertext + '</b>'
         context.bot.edit_message_text(message_id=update.callback_query.message.message_id, chat_id=update.callback_query.message.chat.id, text=newText, parse_mode='HTML', reply_markup=None)
     else:
-        newText = update.callback_query.message.caption + '\n<b>Ответ отклонен пользователем ' + usertext + '</b>'
+        newText = update.callback_query.message.caption + '\n<b>РћС‚РІРµС‚ РѕС‚РєР»РѕРЅРµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј ' + usertext + '</b>'
         context.bot.edit_message_caption(message_id=update.callback_query.message.message_id, chat_id=update.callback_query.message.chat.id, caption=newText, parse_mode='HTML', reply_markup=None)
     update.callback_query.answer()
 
@@ -465,20 +464,21 @@ def button(update: Update, context: CallbackContext) -> int:
                     context.bot.send_photo(chat_id=update.effective_chat.id, photo=answer['link'])
                 elif answer['type'] == 'video':
                     context.bot.send_video(chat_id=update.effective_chat.id, video=answer['link'])
+                elif answer['type'] == 'animation':
+                    context.bot.send_animation(chat_id=update.effective_chat.id, animation=answer['link'])
 
     elif query.data == 'rankings':
         message_id = update.callback_query.message.message_id
         context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message_id)
-        context.bot.send_message(chat_id=update.effective_user.id, text='Результаты размещены на ресурсе: <a href="https://docs.google.com/spreadsheets/d/11YWtCk9ZYHmN0rZZBUJthgEyskmAN3IXdnKrTnXRVCk/edit?usp=sharing">Таблица лидеров</a>', parse_mode='HTML')
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р РµР·СѓР»СЊС‚Р°С‚С‹ СЂР°Р·РјРµС‰РµРЅС‹ РЅР° СЂРµСЃСѓСЂСЃРµ: <a href="https://docs.google.com/spreadsheets/d/1JOvqt1zBM75v_ikOAkeA1d8c66eGPhD2-du2uxOzww8/edit?usp=sharing">РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ</a>', parse_mode='HTML')
     elif query.data == 'youtube':
         message_id = update.callback_query.message.message_id
         context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message_id)
-        context.bot.send_message(chat_id=update.effective_user.id, text='<a href="https://youtube.com/channel/UC4EaM8HifIzJ5FxluQzkwWg">Youtube-канал Сибирского ГУ Банка России</a>', parse_mode='HTML')
+        context.bot.send_message(chat_id=update.effective_user.id, text='<a href="https://t.me/+GgOY2lsHM1Q1YzYy">РќР°С€ СЃРїРѕСЂС‚РёРІРЅС‹Р№ РєР°РЅР°Р» РІ Telegram</a>', parse_mode='HTML')
     elif query.data == 'current_task':
         message_id = update.callback_query.message.message_id
         context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message_id)
-        # tempMessage = context.bot.send_message(chat_id=update.effective_user.id, text='Проверяю активные задания, это может занять некоторое время')
-
+        # tempMessage = context.bot.send_message(chat_id=update.effective_user.id, text='РџСЂРѕРІРµСЂСЏСЋ Р°РєС‚РёРІРЅС‹Рµ Р·Р°РґР°РЅРёСЏ, СЌС‚Рѕ РјРѕР¶РµС‚ Р·Р°РЅСЏС‚СЊ РЅРµРєРѕС‚РѕСЂРѕРµ РІСЂРµРјСЏ')
         if (len(daily_tasks) > 0) and (str(update.effective_user.id) in leaders):
             tasks = []
             for key in daily_tasks.keys():
@@ -488,26 +488,26 @@ def button(update: Update, context: CallbackContext) -> int:
             for task in tasks:
                 send_task(context, task, update.effective_user.id, joker)
         else:
-            context.bot.send_message(chat_id=update.effective_user.id, text='На сегодня заданий нет!')
+            context.bot.send_message(chat_id=update.effective_user.id, text='РќР° СЃРµРіРѕРґРЅСЏ Р·Р°РґР°РЅРёР№ РЅРµС‚!')
 
         # try:
         #     tempMessage.delete()
         # except:
-        #     logger.info('Не удалось удалить сообщение ' + str(tempMessage.message_id) + ' у пользователя ' + str(update.effective_user.id))
+        #     logger.info('РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ ' + str(tempMessage.message_id) + ' Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ ' + str(update.effective_user.id))
 
     elif query.data == 'chat':
         secret_chat_id = '-1001203218883'
         invite_link = context.bot.export_chat_invite_link(chat_id=secret_chat_id)
         if invite_link:
-            update.callback_query.message.delete()
-            context.bot.send_message(chat_id=update.effective_user.id, text='Добро пожаловать в чат участников! Ссылка: {}'.format(invite_link))
+            query.message.delete()
+            context.bot.send_message(chat_id=update.effective_user.id, text='Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ С‡Р°С‚ СѓС‡Р°СЃС‚РЅРёРєРѕРІ! РЎСЃС‹Р»РєР°: {}'.format(invite_link))
 
 def use_joker(update: Updater, context: CallbackContext) -> None:
     update.callback_query.answer()
-    if datetime.date(datetime.today()) >= date(2021, 4, 19):
-        context.bot.send_message(chat_id=update.effective_user.id, text='Джокер больше не может быть использован в рамках этого квеста!')
+    if datetime.date(datetime.today()) >= date(2022, 6, 20):
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р¶РѕРєРµСЂ Р±РѕР»СЊС€Рµ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РёСЃРїРѕР»СЊР·РѕРІР°РЅ РІ СЂР°РјРєР°С… СЌС‚РѕРіРѕ РєРІРµСЃС‚Р°!')
     elif datetime.today().isoweekday() == 7:
-        context.bot.send_message(chat_id=update.effective_user.id, text='Джокер не может быть использован в воскресенье!')
+        context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р¶РѕРєРµСЂ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РёСЃРїРѕР»СЊР·РѕРІР°РЅ РІ РІРѕСЃРєСЂРµСЃРµРЅСЊРµ!')
     else:
         task_id = update.callback_query.data.split('_')[1]
         userKey = str(update.effective_user.id)
@@ -521,19 +521,19 @@ def use_joker(update: Updater, context: CallbackContext) -> None:
                     else:
                         results_to_upload[userKey] = {}
                         results_to_upload[userKey]['joker'] = task_id
-                    context.bot.send_message(chat_id=update.effective_user.id, text='Джокер будет использован при зачете ответа на вопрос!')
-                    notifyText = '{}: Использован джокер для задания - {}'.format(update.effective_user.id, task_id)
+                    context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р¶РѕРєРµСЂ Р±СѓРґРµС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅ РїСЂРё Р·Р°С‡РµС‚Рµ РѕС‚РІРµС‚Р° РЅР° РІРѕРїСЂРѕСЃ!')
+                    notifyText = '{}: РСЃРїРѕР»СЊР·РѕРІР°РЅ РґР¶РѕРєРµСЂ РґР»СЏ Р·Р°РґР°РЅРёСЏ - {}'.format(update.effective_user.id, task_id)
                     logging.info(notifyText)
                     send_message_to_krivetko(context, notifyText)
                     if 'sentMsgs' in context.user_data:
                         for key in context.user_data['sentMsgs'].keys():
                             context.bot.edit_message_reply_markup(chat_id=update.effective_user.id, message_id=context.user_data['sentMsgs'][key], reply_markup=generate_answer_kb(key, False))
                 else:
-                    context.bot.send_message(chat_id=update.effective_user.id, text='Джокер может быть использован только на заданиях текущего этапа!')
+                    context.bot.send_message(chat_id=update.effective_user.id, text='Р”Р¶РѕРєРµСЂ РјРѕР¶РµС‚ Р±С‹С‚СЊ РёСЃРїРѕР»СЊР·РѕРІР°РЅ С‚РѕР»СЊРєРѕ РЅР° Р·Р°РґР°РЅРёСЏС… С‚РµРєСѓС‰РµРіРѕ СЌС‚Р°РїР°!')
             else:
-                context.bot.send_message(chat_id=update.effective_user.id, text='Похоже джокер уже был использован Вами ранее.')
+                context.bot.send_message(chat_id=update.effective_user.id, text='РџРѕС…РѕР¶Рµ РґР¶РѕРєРµСЂ СѓР¶Рµ Р±С‹Р» РёСЃРїРѕР»СЊР·РѕРІР°РЅ Р’Р°РјРё СЂР°РЅРµРµ.')
         else:
-            context.bot.send_message(chat_id=update.effective_user.id, text='Информация о доступном джокере отсутствует. Просьба обратиться к организаторам!')
+            context.bot.send_message(chat_id=update.effective_user.id, text='РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РґРѕСЃС‚СѓРїРЅРѕРј РґР¶РѕРєРµСЂРµ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚. РџСЂРѕСЃСЊР±Р° РѕР±СЂР°С‚РёС‚СЊСЃСЏ Рє РѕСЂРіР°РЅРёР·Р°С‚РѕСЂР°Рј!')
 
 # --------------------- General Purpose Utilities ---------------------
 def mark_answer(user_id, task_id, correctAnswer=False, approvalPending=False):
@@ -578,15 +578,19 @@ def get_task(task_id):
 
 def send_task(context, task, user_id, joker=False):
     media = task.pop('media', None)
-    text = task.pop('task')
+    text = task.pop('task', None)
     value = task.pop('value', None)
     if value is not None:
-        text = text + '\n(<b>Стоимость: ' + value + (' баллов' if int(value)> 4 else ' балла') + '</b>)'
+        text = text + '\n(<b>РЎС‚РѕРёРјРѕСЃС‚СЊ: ' + value + (' Р±Р°Р»Р»РѕРІ' if int(value)> 4 else ' Р±Р°Р»Р»Р°') + '</b>)'
     if media is not None:
         context.bot.send_media_group(chat_id=user_id, media=media)
     seq = task.pop('seq', None)
     if seq is not None:
+        for seqTask in seq:
+            convert_media(seqTask)
         context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML')
+        if media is not None:
+            context.bot.send_media_group(chat_id=user_id, media=media)
         task = seq.pop(0)
         context.user_data[task['id'].split('_')[0] + 'seq'] = seq
         context.user_data[task['id'].split('_')[0] + 'seqQuestionsToSend'] = len(seq)
@@ -595,10 +599,11 @@ def send_task(context, task, user_id, joker=False):
         seqQuestionsToSend = context.user_data.pop(task['id'].split('_')[0] + 'seqQuestionsToSend', None)
         sentMessage = None
         if seqQuestionsToSend is not None:
-            if seqQuestionsToSend == 2: # В серии 3 задания, одно уже направлено. Поэтому только при двух оставшихся показываем кнопки
-                sentMessage = context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML', reply_markup=generate_answer_kb(task['id'], joker))
-            else:
-                context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML')
+            #if seqQuestionsToSend == 2 or seqQuestionsToSend == 3: # Р’ СЃРµСЂРёРё 3-4 Р·Р°РґР°РЅРёСЏ, РѕРґРЅРѕ СѓР¶Рµ РЅР°РїСЂР°РІР»РµРЅРѕ. РџРѕСЌС‚РѕРјСѓ С‚РѕР»СЊРєРѕ РїСЂРё РґРІСѓС… Рё С‚СЂРµС… РѕСЃС‚Р°РІС€РёС…СЃСЏ РїРѕРєР°Р·С‹РІР°РµРј РєРЅРѕРїРєРё
+            sentMessage = context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML', reply_markup=generate_answer_kb(task['id'], joker))
+            #else:
+            #    context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML')
+
             context.user_data[task['id'].split('_')[0] + 'seqQuestionsToSend'] = seqQuestionsToSend - 1
         else:
             sentMessage = context.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML', reply_markup=generate_answer_kb(task['id'], joker))
@@ -611,11 +616,31 @@ def validate_answer(task_id, answer, context):
     task = get_task(task_id)
     if task is not None:
         if task_id + 'seqAnswers' in context.user_data.keys():
-            answers = [a for a in task['answer'].split(';')]
-            if answers == context.user_data[task_id + 'seqAnswers']:
-                return True
-            else:
-                return False
+            #added 05.06.2022
+            if len(task['seq']) > 0:
+                answers = context.user_data[task_id + 'seqAnswers']
+                if len(answers) == 0 or len(answers) != len(task['seq']):
+                    logging.info('РјР°Р»Рѕ РѕС‚РІРµС‚РѕРІ')
+                    logging.info(answer)
+                    return False
+                else:
+                    correct_answers = [seq_task['answer'].split(';') for seq_task in task['seq']]
+                    logging.info(correct_answers)
+                    correct = 0
+                    for i in range(len(answers)):
+                        if answers[i] in correct_answers[i]:
+                            correct += 1
+                    logging.info('correct: {}'.format(correct))
+                    if correct == len(correct_answers):
+                        return True
+                    else:
+                        return False
+
+            #answers = [a for a in task['answer'].split(';')]
+            #if answers == context.user_data[task_id + 'seqAnswers']:
+            #    return True
+            #else:
+            #    return False
         answers = {a for a in task['answer'].split(';')}
         if ' '.join(answer.split()) in answers:
             return True
@@ -625,10 +650,11 @@ def validate_answer(task_id, answer, context):
         return False
 
 def send_message_to_krivetko(context, message):
-    context.bot.send_message(chat_id=KRIVETKO, text=message)
+    for id in admins:
+        context.bot.send_message(chat_id=id, text=message)
 
 def google_sync(context: CallbackContext):
-    logging.info('Начало синхронизации')
+    logging.info('РќР°С‡Р°Р»Рѕ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё')
     if len(results_to_upload.keys()) > 0:
         for key in results_to_upload.keys():
             foundResultRow = resultsSheet.find(pattern=key, matchEntireCell=True)
@@ -644,7 +670,7 @@ def google_sync(context: CallbackContext):
                         foundResultCol = resultsSheet.find(pattern=resultKey, matchEntireCell=True)
                         if len(foundResultCol) > 0:
                              resultsSheet.update_value((foundResultRow[0].row, foundResultCol[0].col), results_to_upload[key][resultKey])
-            logging.info('Синхронизирована информация по user_id - ' + key)
+            logging.info('РЎРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°РЅР° РёРЅС„РѕСЂРјР°С†РёСЏ РїРѕ user_id - ' + key)
             logging.info(results_to_upload[key])
         results_to_upload.clear()
         if len(daily_tasks.keys()) > 0:
@@ -655,7 +681,7 @@ def google_sync(context: CallbackContext):
                 cache_participants()
                 cache_results()
     else:
-        logging.info('Синхронизация не требуется')
+        logging.info('РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РЅРµ С‚СЂРµР±СѓРµС‚СЃСЏ')
 
 # Jobs
 
@@ -677,23 +703,24 @@ def send_daily_tasks(context: CallbackContext):
     cache_right_answers()
 
     itemsSent = 0
-    send_message_to_krivetko(context, 'Начата отправка уведомлений.')
+    send_message_to_krivetko(context, 'РќР°С‡Р°С‚Р° РѕС‚РїСЂР°РІРєР° СѓРІРµРґРѕРјР»РµРЅРёР№.')
     for participant in partRows:
         if (participant[0] != '') and (str(participant[0]) in leaders):
+        #if (participant[0] != ''):
             if participant[3] == '1':
                 username = participant[1]
             else:
                 username = participant[2]
             try:
-                context.bot.send_message(chat_id=participant[0], text='Приветствую, {}! Доступны новые задания. Для просмотра прошу выполнить команду /start и выбрать пункт <b>Задания на сегодня</b>'.format(username), parse_mode='HTML')
+                context.bot.send_message(chat_id=participant[0], text='РџСЂРёРІРµС‚СЃС‚РІСѓСЋ, {}! Р”РѕСЃС‚СѓРїРЅС‹ РЅРѕРІС‹Рµ Р·Р°РґР°РЅРёСЏ. Р”Р»СЏ РїСЂРѕСЃРјРѕС‚СЂР° РїСЂРѕС€Сѓ РІС‹РїРѕР»РЅРёС‚СЊ РєРѕРјР°РЅРґСѓ /start Рё РІС‹Р±СЂР°С‚СЊ РїСѓРЅРєС‚ <b>Р—Р°РґР°РЅРёСЏ РЅР° СЃРµРіРѕРґРЅСЏ</b>'.format(username), parse_mode='HTML')
                 itemsSent = itemsSent + 1
                 if itemsSent > 30:
-                    send_message_to_krivetko(context, 'Отправлено 30 сообщений.')
+                    send_message_to_krivetko(context, 'РћС‚РїСЂР°РІР»РµРЅРѕ 30 СЃРѕРѕР±С‰РµРЅРёР№.')
                     itemsSent = 0
             except:
-                send_message_to_krivetko(context, '{} : уведомление о новых заданиях не отправлено!'.format(str(participant[0]) + '(' + username +')'))
+                send_message_to_krivetko(context, '{} : СѓРІРµРґРѕРјР»РµРЅРёРµ Рѕ РЅРѕРІС‹С… Р·Р°РґР°РЅРёСЏС… РЅРµ РѕС‚РїСЂР°РІР»РµРЅРѕ!'.format(str(participant[0]) + '(' + username +')'))
     if itemsSent > 0:
-        send_message_to_krivetko(context, 'Отправлено {} сообщений.'.format(itemsSent))
+        send_message_to_krivetko(context, 'РћС‚РїСЂР°РІР»РµРЅРѕ {} СЃРѕРѕР±С‰РµРЅРёР№.'.format(itemsSent))
 
 def main():
 
@@ -759,7 +786,6 @@ def main():
     dates = sorted(list({datetime.strptime(row[6], '%d.%m.%Y') for row in tasksRows if len(row) > 6 and row[8] != '1' and row[6] != ''}))
     prevDate = None
     for date in dates:
-        logging.info(date)
         contextObj = {}
         contextObj['date'] = date.strftime('%d.%m.%Y')
         contextObj['prev_date'] = prevDate
@@ -767,7 +793,7 @@ def main():
         prevDate = date.strftime('%d.%m.%Y')
 
     updater.job_queue.run_repeating(google_sync, 300)
-        # exact_time = datetime(2021,2,19,3,35,0)
+    # exact_time = datetime(2021,2,19,3,35,0)
     # j = updater.job_queue.run_once(send_message_to_krivetko, exact_time)
 
     updater.start_polling()
